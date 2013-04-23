@@ -105,11 +105,16 @@ Backbone.View.prototype.initialize = function (options) {
             } else {
                 //Default collection
                 var collectionImportVariable = Backbone.Ginger.substitute('collectionImportVariable', modelName);
+                var collectionObject = Backbone.Ginger.options.collectionImportParentObject[collectionImportVariable];
 
-                if (Backbone.Ginger.options.collectionImportParentObject[collectionImportVariable] == undefined) {
+                if (collectionObject == undefined) {
                     Backbone.Ginger.options.collectionImportParentObject[collectionImportVariable] = Backbone.Collection.extend({
                         model: Backbone.Ginger.options.modelImportParentObject[modelName]
                     });
+                }else{
+                    if (!(collectionObject.prototype.model.prototype instanceof Backbone.Model)){
+                        collectionObject.prototype.model = Backbone.Ginger.options.modelImportParentObject[modelName]
+                    }
                 }
 
                 this[Backbone.Ginger.options.collectionVariable][modelName] = new Backbone.Ginger.options.collectionImportParentObject[collectionImportVariable]();
