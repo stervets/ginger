@@ -20,12 +20,10 @@ Backbone.Ginger = {
         nodeVariable: 'node',
         // Collection variable, which contains all collections defined by collectionHandler
         collectionVariable: 'collection',
-        // Variable, which contains all collections view nodes
-        collectionViewNodeVariable: 'collectionViewNode',
         // Variable name, which contains link to view from model or collection
         viewVariable: 'view',
         // User init function, fired after Backbone.View.initialize
-        initFunction : 'init',
+        initFunction: 'init',
 
         // model parent object, where Ginger will try to find modelImportVariable
         modelImportParentObject: window,
@@ -64,7 +62,7 @@ Backbone.Ginger = {
 
 Backbone.View.prototype.initialize = function (options) {
     //Setup node ($el)
-    if (this[Backbone.Ginger.options.nodeVariable] != undefined||this[Backbone.Ginger.options.templateVariable] != undefined) {
+    if (this[Backbone.Ginger.options.nodeVariable] != undefined || this[Backbone.Ginger.options.templateVariable] != undefined) {
         if (this[Backbone.Ginger.options.templateVariable] == undefined) {
             if (_(this[Backbone.Ginger.options.nodeVariable]).isString()) {
                 if (!(this.$el = $(this[Backbone.Ginger.options.nodeVariable])).length) {
@@ -95,13 +93,13 @@ Backbone.View.prototype.initialize = function (options) {
         }
 
         this[Backbone.Ginger.options.collectionVariable] = {};
-        this[Backbone.Ginger.options.collectionViewNodeVariable] = {};
 
-        _(this[Backbone.Ginger.options.collectionHandler]).each(function (events, modelName) {
-            modelName = Backbone.Ginger.substitute('modelImportVariable', modelName);
+        _(this[Backbone.Ginger.options.collectionHandler]).each(function (events, modelNameKey) {
+            modelNameKey = modelNameKey.split('>');
+            var modelName = Backbone.Ginger.substitute('modelImportVariable', modelNameKey[0].trim());
 
             if (Backbone.Ginger.options.modelImportParentObject[modelName] == undefined) {
-                Backbone.Ginger.error('Collection handler model "' + modelName + '" is undefined');
+                Backbone.Ginger.error('Collection handler: Model "' + modelName + '" is undefined');
             } else {
                 //Default collection
                 var collectionImportVariable = Backbone.Ginger.substitute('collectionImportVariable', modelName);
@@ -111,8 +109,8 @@ Backbone.View.prototype.initialize = function (options) {
                     Backbone.Ginger.options.collectionImportParentObject[collectionImportVariable] = Backbone.Collection.extend({
                         model: Backbone.Ginger.options.modelImportParentObject[modelName]
                     });
-                }else{
-                    if (!(collectionObject.prototype.model.prototype instanceof Backbone.Model)){
+                } else {
+                    if (!(collectionObject.prototype.model.prototype instanceof Backbone.Model)) {
                         collectionObject.prototype.model = Backbone.Ginger.options.modelImportParentObject[modelName]
                     }
                 }
@@ -122,20 +120,18 @@ Backbone.View.prototype.initialize = function (options) {
             }
 
             if (_(events).isObject()) {
-                var modelViewName = Backbone.Ginger.substitute('viewImportVariable', modelName);
+                var modelViewName = (modelNameKey[1] == undefined) ? Backbone.Ginger.substitute('viewImportVariable', modelName) : modelNameKey[1].trim();
                 var collectionViewNode = Backbone.Ginger.substitute('collectionViewNode', modelViewName);
                 var modelViewNode = this.$('#' + collectionViewNode);
 
-                if (!modelViewNode.length) {
-                    Backbone.Ginger.error('Collection model "' + modelName + '" view $("' + collectionViewNode + '") not found in the $("' + this[Backbone.Ginger.options.nodeVariable] + '")');
-                }
-
-                this[Backbone.Ginger.options.collectionViewNodeVariable][modelName] = modelViewNode;
-
                 if (!_(events.add).isFunction()) {
+                    if (!modelViewNode.length) {
+                        Backbone.Ginger.error('Model "' + modelName + '" collection: Node $("#' + collectionViewNode + '") not found in the $("' + this[Backbone.Ginger.options.nodeVariable] + '")');
+                    }
+
                     events.add = function (aModel) {
                         if (Backbone.Ginger.options.viewImportParentObject[modelViewName] == undefined) {
-                            Backbone.Ginger.error('Model "' + modelName + '" view object "' + modelViewName + '" is missing');
+                            Backbone.Ginger.error('Model "' + modelName + '": View "' + modelViewName + '" is missing');
                         } else {
                             aModel[Backbone.Ginger.options.viewVariable] = new Backbone.Ginger.options.viewImportParentObject[modelViewName]({
                                 model: aModel
@@ -146,6 +142,10 @@ Backbone.View.prototype.initialize = function (options) {
                 }
 
                 if (!_(events.reset).isFunction()) {
+                    if (!modelViewNode.length) {
+                        Backbone.Ginger.error('Model "' + modelName + '" collection: Node $("#' + collectionViewNode + '") not found in the $("' + this[Backbone.Ginger.options.nodeVariable] + '")');
+                    }
+
                     events.reset = function (aCollection) {
                         modelViewNode.empty();
                         aCollection.each(function (aModel) {
